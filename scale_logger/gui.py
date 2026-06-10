@@ -1,7 +1,7 @@
 import sys
-import subprocess
 import re
 import ctypes
+import time
 
 import serial
 from serial.tools import list_ports
@@ -1054,26 +1054,15 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(LOG_FOLDER)))
 
     def run_com_port_test(self):
-        script_path = PROJECT_DIR / "com_port_test.py"
+        ports = list(list_ports.comports())
+        lines = ["Available COM Ports:"]
 
-        try:
-            result = subprocess.run(
-                [sys.executable, str(script_path)],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
-            )
-        except Exception as exc:
-            QMessageBox.critical(self, "Com Port Test", str(exc))
-            return
+        if ports:
+            lines.extend(f"{port.device} - {port.description}" for port in ports)
+        else:
+            lines.append("No COM Ports Found.")
 
-        output = result.stdout.strip()
-        error = result.stderr.strip()
-        message = output or "No COM Ports Found."
-        if error:
-            message = f"{message}\n\nERROR:\n{error}"
-
+        message = "\n".join(lines)
         QMessageBox.information(self, "Com Port Test", message)
         self.log("Com Port Test Ran.")
 
@@ -1086,30 +1075,7 @@ class MainWindow(QMainWindow):
             )
             return
 
-        script_path = PROJECT_DIR / "recieve_test.py"
-
-        try:
-            result = subprocess.run(
-                [sys.executable, str(script_path)],
-                capture_output=True,
-                text=True,
-                timeout=8,
-                check=False,
-            )
-            output = result.stdout.strip()
-            error = result.stderr.strip()
-        except subprocess.TimeoutExpired as exc:
-            output = (exc.stdout or "").strip()
-            error = (exc.stderr or "").strip()
-        except Exception as exc:
-            QMessageBox.critical(self, "Receive Test", str(exc))
-            return
-
-        message = output or "No Raw Scale Data Received During The Test Window."
-        if error:
-            message = f"{message}\n\nERROR:\n{error}"
-
-        detected_port = self.detect_port_from_receive_test_output(message)
+        message, detected_port = self.receive_test_output()
         if detected_port:
             self.load_ports()
             self.port_combo.setCurrentText(detected_port)
@@ -1118,6 +1084,65 @@ class MainWindow(QMainWindow):
 
         QMessageBox.information(self, "Receive Test", message)
         self.log("Receive Test Ran.")
+
+    def receive_test_output(self):
+        ports = list(list_ports.comports())
+        lines = ["Available COM Ports:"]
+        first_open_port = None
+        detected_port = None
+
+        if not ports:
+            return "No COM Ports Found.", None
+
+        lines.extend(f"{port.device} - {port.description}" for port in ports)
+        lines.append("")
+        lines.append("Probing COM Ports For Scale Data...")
+        lines.append("")
+
+        for port in ports:
+            lines.append(f"Trying {port.device}...")
+
+            try:
+                with serial.Serial(
+                    port=port.device,
+                    baudrate=self.baud_spin.value(),
+                    bytesize=serial.EIGHTBITS,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    timeout=1,
+                    xonxoff=False,
+                    rtscts=False,
+                    dsrdtr=False,
+                ) as scale:
+                    scale.dtr = self.dtr_check.isChecked()
+                    scale.rts = self.rts_check.isChecked()
+                    scale.reset_input_buffer()
+
+                    if first_open_port is None:
+                        first_open_port = port.device
+
+                    deadline = time.time() + 2
+                    while time.time() < deadline:
+                        raw = scale.readline()
+                        if not raw:
+                            continue
+
+                        line = clean_scale_line(raw.decode("ascii", errors="ignore"))
+                        if line:
+                            lines.append(f"Raw: {line}")
+                            lines.append(f"Detected Data On {port.device}: {line}")
+                            detected_port = port.device
+                            return "\n".join(lines), detected_port
+
+            except serial.SerialException as exc:
+                lines.append(f"Could Not Open {port.device}: {exc}")
+
+        if first_open_port:
+            lines.append(f"No Data Detected. Using First Open Port: {first_open_port}")
+            return "\n".join(lines), first_open_port
+
+        lines.append("No Usable COM Port Found.")
+        return "\n".join(lines), None
 
     @staticmethod
     def detect_port_from_receive_test_output(output):

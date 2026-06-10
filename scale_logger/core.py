@@ -1,6 +1,7 @@
 import math
 import os
 import re
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +14,19 @@ from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.worksheet import Worksheet
 
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+def app_base_dir():
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+
+    return Path(__file__).resolve().parent.parent
+
+
+def resource_dir():
+    return Path(getattr(sys, "_MEIPASS", app_base_dir()))
+
+
+PROJECT_DIR = app_base_dir()
+RESOURCE_DIR = resource_dir()
 LOG_FOLDER = PROJECT_DIR / "Logs"
 TEMPLATE_FILENAME = PROJECT_DIR / "weight_qc_checklist_template.xlsx"
 

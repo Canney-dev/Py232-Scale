@@ -28,6 +28,28 @@ Or double-click:
 run.bat
 ```
 
+## PACKAGE
+
+Build a Windows app folder with PyInstaller:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-build.txt
+python -m PyInstaller --clean --noconfirm py232_scale.spec
+```
+
+Or double-click:
+
+```text
+build_exe.bat
+```
+
+The packaged app is created at:
+
+```text
+dist\PY 232 Scale\PY 232 Scale.exe
+```
+
 ## EDITING
 
 - Use `FILE > OPEN LOG` to open a previously saved `.xlsx` log for editing.
