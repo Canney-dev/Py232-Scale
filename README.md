@@ -43,5 +43,10 @@ run.bat
 Logs are saved to the `Logs` folder as Excel workbooks named like:
 
 ```text
-sek30k_batch_001.xlsx
+Weight_QC_Form 1.xlsx
 ```
+
+## LICENSES
+
+PY 232 Scale is licensed under the MIT License. Third party dependency license
+information is listed in `THIRD_PARTY_NOTICES.md`.

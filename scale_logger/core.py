@@ -102,19 +102,19 @@ def get_next_log_filename():
 
     existing = [
         name for name in os.listdir(LOG_FOLDER)
-        if name.startswith("sek30k_batch_") and name.endswith(".xlsx")
+        if name.startswith("Weight_QC_Form ") and name.endswith(".xlsx")
     ]
     numbers = []
 
     for name in existing:
         try:
-            number = int(name.replace("sek30k_batch_", "").replace(".xlsx", ""))
+            number = int(name.replace("Weight_QC_Form ", "").replace(".xlsx", ""))
             numbers.append(number)
         except ValueError:
             pass
 
     next_number = max(numbers, default=0) + 1
-    return LOG_FOLDER / f"sek30k_batch_{next_number:03d}.xlsx"
+    return LOG_FOLDER / f"Weight_QC_Form {next_number}.xlsx"
 
 
 def apply_qc_form_layout(sheet):
