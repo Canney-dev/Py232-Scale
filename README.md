@@ -2,6 +2,8 @@
 
 PySide6 desktop app for recording three scale readings per item and saving a printable Excel QC checklist.
 
+![PY 232 Scale screenshot](docs/py-232-scale-screenshot.png)
+
 ## SETUP
 
 ```powershell
