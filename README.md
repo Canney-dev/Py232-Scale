@@ -38,17 +38,34 @@ python -m pip install -r requirements-build.txt
 python -m PyInstaller --clean --noconfirm py232_scale.spec
 ```
 
+Build a single-file Windows executable:
+
+```powershell
+python -m PyInstaller --clean --noconfirm py232_scale_onefile.spec
+```
+
 Or double-click:
 
 ```text
 build_exe.bat
 ```
 
-The packaged app is created at:
+The packaged app folder is created at:
 
 ```text
 dist\PY 232 Scale\PY 232 Scale.exe
 ```
+
+The single-file executable is created at:
+
+```text
+dist\PY 232 Scale.exe
+```
+
+If you use the folder package or a zipped copy of it, click `Extract all` before
+running the app. Running the folder package directly from Windows zip preview
+can show a `Failed to load Python DLL` error because Windows extracts the `.exe`
+without the required `_internal` folder.
 
 ## EDITING
 
