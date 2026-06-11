@@ -6,8 +6,8 @@ import time
 import serial
 from serial.tools import list_ports
 
-from PySide6.QtCore import QThread, Qt, QUrl, Signal
-from PySide6.QtGui import QAction, QDesktopServices
+from PySide6.QtCore import QSettings, QThread, Qt, QUrl, Signal
+from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QPalette
 from PySide6.QtPrintSupport import QPrinterInfo
 from PySide6.QtWidgets import (
     QApplication,
@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QStyleFactory,
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
@@ -50,6 +51,87 @@ from .core import (
     rank_weight_statuses,
     title_text,
 )
+
+
+THEME_OPTIONS = {
+    "system": "System Default",
+    "light": "Light",
+    "dark": "Dark",
+}
+
+
+def default_style_name():
+    app = QApplication.instance()
+    if app is None:
+        return ""
+
+    return str(app.property("defaultStyleName") or app.style().objectName())
+
+
+def default_palette():
+    app = QApplication.instance()
+    if app is None:
+        return QPalette()
+
+    palette = app.property("defaultPalette")
+    if isinstance(palette, QPalette):
+        return QPalette(palette)
+
+    return QPalette(app.palette())
+
+
+def light_palette():
+    style = QStyleFactory.create("Fusion")
+    if style is not None:
+        return style.standardPalette()
+
+    return QPalette()
+
+
+def dark_palette():
+    palette = QPalette()
+    palette.setColor(QPalette.Window, QColor(32, 32, 32))
+    palette.setColor(QPalette.WindowText, QColor(245, 245, 245))
+    palette.setColor(QPalette.Base, QColor(24, 24, 24))
+    palette.setColor(QPalette.AlternateBase, QColor(45, 45, 45))
+    palette.setColor(QPalette.ToolTipBase, QColor(245, 245, 245))
+    palette.setColor(QPalette.ToolTipText, QColor(20, 20, 20))
+    palette.setColor(QPalette.Text, QColor(245, 245, 245))
+    palette.setColor(QPalette.Button, QColor(45, 45, 45))
+    palette.setColor(QPalette.ButtonText, QColor(245, 245, 245))
+    palette.setColor(QPalette.BrightText, QColor(255, 80, 80))
+    palette.setColor(QPalette.Link, QColor(80, 160, 255))
+    palette.setColor(QPalette.Highlight, QColor(64, 128, 200))
+    palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+    palette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(140, 140, 140))
+    palette.setColor(QPalette.Disabled, QPalette.Text, QColor(140, 140, 140))
+    palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(140, 140, 140))
+    return palette
+
+
+def apply_theme(theme):
+    app = QApplication.instance()
+    if app is None:
+        return
+
+    if theme == "dark":
+        fusion_style = QStyleFactory.create("Fusion")
+        if fusion_style is not None:
+            QApplication.setStyle(fusion_style)
+        app.setPalette(dark_palette())
+        return
+
+    if theme == "light":
+        fusion_style = QStyleFactory.create("Fusion")
+        if fusion_style is not None:
+            QApplication.setStyle(fusion_style)
+        app.setPalette(light_palette())
+        return
+
+    style_name = default_style_name()
+    if style_name:
+        QApplication.setStyle(style_name)
+    app.setPalette(default_palette())
 
 
 class SerialReader(QThread):
@@ -142,6 +224,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PY 232 Scale")
         self.resize(980, 680)
 
+        self.settings = QSettings()
+        self.theme_actions = {}
         self.session = None
         self.reader = None
         self.latest_reading = None
@@ -312,6 +396,21 @@ class MainWindow(QMainWindow):
         receive_test_action.triggered.connect(self.run_receive_test)
         settings_menu.addAction(receive_test_action)
 
+        theme_menu = settings_menu.addMenu("Theme")
+        theme_group = QActionGroup(self)
+        theme_group.setExclusive(True)
+        current_theme = self.current_theme()
+
+        for theme, label in THEME_OPTIONS.items():
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setData(theme)
+            action.setChecked(theme == current_theme)
+            action.triggered.connect(lambda _checked=False, value=theme: self.set_theme(value))
+            theme_group.addAction(action)
+            theme_menu.addAction(action)
+            self.theme_actions[theme] = action
+
     def load_ports(self):
         ports = [port.device for port in list_ports.comports()]
         if not ports:
@@ -426,6 +525,25 @@ class MainWindow(QMainWindow):
         self.rts_check.setChecked(rts_check.isChecked())
         self.update_serial_settings_label()
         self.log("Serial Settings Updated.")
+
+    def current_theme(self):
+        theme = str(self.settings.value("theme", "system"))
+        if theme not in THEME_OPTIONS:
+            return "system"
+
+        return theme
+
+    def set_theme(self, theme):
+        if theme not in THEME_OPTIONS:
+            theme = "system"
+
+        self.settings.setValue("theme", theme)
+        apply_theme(theme)
+
+        for action_theme, action in self.theme_actions.items():
+            action.setChecked(action_theme == theme)
+
+        self.log(f"Theme Set To {THEME_OPTIONS[theme]}.")
 
     def add_item(self):
         item_name = title_text(self.item_edit.text())
@@ -1171,6 +1289,11 @@ class MainWindow(QMainWindow):
 
 def run():
     app = QApplication(sys.argv)
+    app.setOrganizationName("Gregory")
+    app.setApplicationName("PY 232 Scale")
+    app.setProperty("defaultStyleName", app.style().objectName())
+    app.setProperty("defaultPalette", QPalette(app.palette()))
+    apply_theme(str(QSettings().value("theme", "system")))
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

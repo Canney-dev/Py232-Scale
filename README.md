@@ -32,6 +32,7 @@ files.
 - Edit item names, descriptions, and incorrect captured weights.
 - Print saved logs to an available Windows printer.
 - Test COM ports and receive raw scale output from the Settings menu.
+- Choose `System Default`, `Light`, or `Dark` theme.
 
 ## Install From Source
 
@@ -117,6 +118,22 @@ Available settings:
 Only one program can use a COM port at a time. Close receive tests, terminal
 programs, or another copy of PY 232 Scale before starting a new scale
 connection.
+
+## Theme Setting
+
+Open:
+
+```text
+Settings > Theme
+```
+
+Available themes:
+
+- `System Default`: uses the normal Windows/Qt app appearance.
+- `Light`: uses a light app palette.
+- `Dark`: uses a dark app palette.
+
+The selected theme is saved and applied again the next time the app starts.
 
 ## COM Port And Receive Tests
 
