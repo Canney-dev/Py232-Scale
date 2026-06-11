@@ -143,6 +143,13 @@ The app can parse normal numeric scale lines and ticket-style lines such as:
 Net:         0.177kg
 ```
 
+## Tested Scales
+
+PY 232 Scale has been tested with:
+
+1. UWE SEK-30K Checkweighing Scale
+2. Brecknell Digital Counting & Coin Scale B140
+
 ## Opening And Editing Saved Logs
 
 Use:
