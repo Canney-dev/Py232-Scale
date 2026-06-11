@@ -135,6 +135,15 @@ Available themes:
 
 The selected theme is saved and applied again the next time the app starts.
 
+Theme screenshots:
+
+<a href="docs/theme-dark.png">
+  <img src="docs/theme-dark.png" alt="Dark theme screenshot" width="320">
+</a>
+<a href="docs/theme-light.png">
+  <img src="docs/theme-light.png" alt="Light theme screenshot" width="320">
+</a>
+
 ## COM Port And Receive Tests
 
 Use:
