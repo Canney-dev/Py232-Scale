@@ -34,6 +34,8 @@ files.
 - Test COM ports and receive raw scale output from the Settings menu.
 - Choose `System Default`, `Light`, or `Dark` theme.
 
+See [Update Log](UPDATE_LOG.md) for recent project changes.
+
 ## Install From Source
 
 Use these steps if you want to run the Python source code instead of the
