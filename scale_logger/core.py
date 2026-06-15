@@ -299,6 +299,17 @@ def rank_weight_statuses(readings):
     return statuses
 
 
+def sort_readings_by_weight(readings, raw_rows):
+    ordered = sorted(
+        enumerate(zip(readings, raw_rows)),
+        key=lambda item: (item[1][0]["weight"], item[0]),
+    )
+    return (
+        [reading for _index, (reading, _raw_row) in ordered],
+        [raw_row for _index, (_reading, raw_row) in ordered],
+    )
+
+
 class QcWorkbookSession:
     def __init__(self, project_number, items):
         self.project_number = title_text(project_number)
@@ -436,6 +447,7 @@ class QcWorkbookSession:
 
     def finalize_item(self, item_index, readings, raw_rows):
         form_row = FORM_START_ROW + item_index
+        readings, raw_rows = sort_readings_by_weight(readings, raw_rows)
         statuses = rank_weight_statuses(readings)
         self.item_results[item_index] = {
             "readings": readings,
@@ -463,6 +475,9 @@ class QcWorkbookSession:
             raw_status_cell = self.raw_sheet.cell(row=raw_row, column=9)
             assert isinstance(raw_status_cell, Cell)
             raw_status_cell.value = status
+            raw_weight_number_cell = self.raw_sheet.cell(row=raw_row, column=4)
+            assert isinstance(raw_weight_number_cell, Cell)
+            raw_weight_number_cell.value = weight_number
 
         self.rebuild_summaries()
         self.save()

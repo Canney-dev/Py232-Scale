@@ -1070,21 +1070,8 @@ class MainWindow(QMainWindow):
             table_item.setData(Qt.UserRole, (item_index, weight_number))
             self.captured_table.setItem(row, column, table_item)
 
-    def update_item_status_rows(self, item_index, statuses):
-        for row in range(self.captured_table.rowCount()):
-            row_item = self.captured_table.item(row, 0)
-            if row_item is None:
-                continue
-
-            stored_item_index, weight_number = row_item.data(Qt.UserRole)
-            if stored_item_index != item_index:
-                continue
-
-            reading = self.session.item_results[item_index]["readings"][weight_number - 1]
-            self.captured_table.item(row, 0).setText(self.session.items[item_index].name)
-            self.captured_table.item(row, 2).setText(f"{reading['weight']:.3f}")
-            self.captured_table.item(row, 3).setText(caps(reading["unit"]))
-            self.captured_table.item(row, 4).setText(statuses[weight_number - 1])
+    def update_item_status_rows(self, _item_index, _statuses):
+        self.populate_captured_weights_from_session()
 
     def refresh_captured_item_names(self, item_index):
         if not self.session:
