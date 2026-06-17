@@ -4,6 +4,19 @@ This log covers project changes from the past two weeks, June 1-17, 2026.
 
 ## June 17, 2026
 
+- Moved the live scale section above the item list and captured weights.
+- Kept the live scale section at a fixed vertical size so the reading text stays visible.
+- Placed the item list and captured weights side by side with a draggable center splitter.
+- Moved the log file path into the bottom of the Setup section.
+- Moved status output into a separate `Console` window.
+- Added `View > Console` to show or hide the Console window.
+- Renamed the menu from `Window` to `View`.
+- Cropped the README main screenshot and theme thumbnails so they show only the app window.
+- Updated the README instructions for the v0.3 layout and release executable.
+- Built the single-file Windows executable as `Py232 Scale v0.3.exe`.
+- Smoke tested the v0.3 executable to confirm the app launches and closes cleanly.
+- Recorded the v0.3 release asset SHA256 checksum:
+  `4097224560B2722EC98B1460C13ADF88620CCCA7F37A515AFF8B6523900340F9`.
 - Added resizable GUI sections with draggable splitters.
 - Made the item list and description table resizable.
 - Made the captured/recorded weights table resizable.

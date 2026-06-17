@@ -12,7 +12,7 @@ and saves the results as `.xlsx` log files.
 For normal use, run the packaged single-file executable:
 
 ```text
-dist\PY 232 Scale v0.2.exe
+dist\Py232 Scale v0.3.exe
 ```
 
 The latest published Windows build is available from
@@ -33,8 +33,9 @@ files.
 - Automatically size the printable item table to the number of items entered.
 - Add total recorded `Low` weight and total recorded `High` weight to the
   bottom tolerance fields.
-- Resize the item list, captured weights, live scale, and status areas with
-  draggable splitters.
+- Use the live scale view above side-by-side item and captured weight tables.
+- Resize the item list and captured weights with the draggable center splitter.
+- Open or hide the separate Console window from the View menu.
 - Save Excel logs in the `Logs` folder.
 - Open previously saved logs for editing.
 - Continue weighing an item from an existing log.
@@ -111,8 +112,9 @@ marked `High`, and the bottom summary fields collect all low and high readings.
 The bottom `Low` field also shows the total of all low-marked weights, and the
 bottom `High` field shows the total of all high-marked weights.
 
-The item list and captured weights sections can be resized by dragging the
-horizontal splitters between the main screen sections.
+The live scale section stays a fixed height so the current reading remains
+visible. The item list and captured weights sections sit side by side and can
+be resized by dragging the center splitter between them.
 
 ## Serial Settings
 
@@ -161,6 +163,14 @@ Theme screenshots:
 </a>
 
 ## COM Port And Receive Tests
+
+Use:
+
+```text
+View > Console
+```
+
+to show or hide the separate status console window.
 
 Use:
 
@@ -291,7 +301,7 @@ dist\PY 232 Scale.exe
 Recommended distribution file:
 
 ```text
-dist\PY 232 Scale v0.2.exe
+dist\Py232 Scale v0.3.exe
 ```
 
 If you distribute the folder package instead, the whole `PY 232 Scale` folder
@@ -305,7 +315,7 @@ This usually means the folder package was run from inside Windows zip preview.
 Click `Extract all` first, or use the single-file executable:
 
 ```text
-dist\PY 232 Scale v0.2.exe
+dist\Py232 Scale v0.3.exe
 ```
 
 ### Access Is Denied On COM Port

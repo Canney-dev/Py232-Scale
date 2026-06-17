@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGridLayout,
     QGroupBox,
+    QHeaderView,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -220,14 +221,26 @@ class SerialReader(QThread):
         return not upper_line.startswith(ignored_prefixes)
 
 
+class LogStatusDialog(QDialog):
+    visibility_changed = Signal(bool)
+
+    def closeEvent(self, event):
+        event.ignore()
+        self.hide()
+        self.visibility_changed.emit(False)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PY 232 Scale")
         self.resize(980, 680)
+        self.setMinimumSize(760, 500)
 
         self.settings = QSettings()
         self.theme_actions = {}
+        self.log_status_action = None
+        self.log_status_window = None
         self.session = None
         self.reader = None
         self.latest_reading = None
@@ -277,10 +290,12 @@ class MainWindow(QMainWindow):
 
         root = QWidget()
         root_layout = QVBoxLayout(root)
-        main_splitter = QSplitter(Qt.Vertical)
-        main_splitter.setChildrenCollapsible(False)
+        tables_splitter = QSplitter(Qt.Horizontal)
+        self.configure_splitter(tables_splitter)
 
         setup_group = QGroupBox("Setup")
+        setup_group.setMinimumHeight(95)
+        setup_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         setup_layout = QGridLayout(setup_group)
         setup_layout.addWidget(QLabel("Project #"), 0, 0)
         setup_layout.addWidget(self.project_edit, 0, 1, 1, 4)
@@ -297,6 +312,7 @@ class MainWindow(QMainWindow):
         item_buttons.addStretch()
 
         self.items_table.setHorizontalHeaderLabels(["Item", "Description"])
+        self.items_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.items_table.horizontalHeader().setStretchLastSection(True)
         self.items_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.items_table.setEditTriggers(
@@ -304,24 +320,38 @@ class MainWindow(QMainWindow):
             | QAbstractItemView.EditKeyPressed
             | QAbstractItemView.AnyKeyPressed
         )
-        self.items_table.setMinimumHeight(90)
+        self.items_table.setMinimumHeight(45)
         self.items_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         setup_layout.addLayout(item_form, 1, 0, 1, 6)
         setup_layout.addLayout(item_buttons, 2, 0, 1, 6)
-        setup_layout.addWidget(self.items_table, 3, 0, 1, 6)
-        setup_layout.setRowStretch(3, 1)
+        self.log_path_label.setWordWrap(True)
+        self.log_path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        setup_layout.addWidget(QLabel("Log File"), 3, 0)
+        setup_layout.addWidget(self.log_path_label, 3, 1, 1, 5)
         setup_layout.setColumnStretch(1, 1)
         setup_layout.setColumnStretch(4, 1)
 
+        items_group = QGroupBox("Items")
+        items_group.setMinimumHeight(45)
+        items_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        items_layout = QVBoxLayout(items_group)
+        items_layout.addWidget(self.items_table)
+
         live_group = QGroupBox("Live Scale")
+        live_group.setFixedHeight(145)
+        live_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         live_layout = QVBoxLayout(live_group)
+        live_layout.setContentsMargins(10, 16, 10, 12)
+        live_layout.setSpacing(8)
         self.live_label.setAlignment(Qt.AlignCenter)
-        self.live_label.setStyleSheet("font-size: 30px; font-weight: 700;")
+        self.live_label.setMinimumHeight(42)
+        self.live_label.setStyleSheet("font-size: 26px; font-weight: 700;")
         self.raw_line_label.setAlignment(Qt.AlignCenter)
         self.raw_line_label.setStyleSheet("font-size: 13px;")
         self.target_label.setAlignment(Qt.AlignCenter)
-        self.target_label.setStyleSheet("font-size: 18px; font-weight: 600;")
+        self.target_label.setMinimumHeight(24)
+        self.target_label.setStyleSheet("font-size: 16px; font-weight: 600;")
         live_layout.addWidget(self.live_label)
         live_layout.addWidget(self.raw_line_label)
         live_layout.addWidget(self.target_label)
@@ -335,12 +365,16 @@ class MainWindow(QMainWindow):
         action_layout.addWidget(self.stop_button)
         action_layout.addWidget(self.open_logs_button)
         scale_widget = QWidget()
+        scale_widget.setFixedHeight(190)
+        scale_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         scale_layout = QVBoxLayout(scale_widget)
         scale_layout.setContentsMargins(0, 0, 0, 0)
         scale_layout.addWidget(live_group)
         scale_layout.addLayout(action_layout)
 
         captured_group = QGroupBox("Captured Weights")
+        captured_group.setMinimumHeight(120)
+        captured_group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         captured_layout = QVBoxLayout(captured_group)
         self.captured_table.setHorizontalHeaderLabels([
             "Item",
@@ -349,35 +383,26 @@ class MainWindow(QMainWindow):
             "Unit",
             "QC Status",
         ])
+        self.captured_table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.captured_table.horizontalHeader().setStretchLastSection(True)
         self.captured_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.captured_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.captured_table.setMinimumHeight(110)
+        self.captured_table.setMinimumHeight(95)
         self.captured_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         captured_layout.addWidget(self.captured_table)
 
-        status_group = QGroupBox("Log And Status")
-        status_layout = QVBoxLayout(status_group)
-        self.status_box.setReadOnly(True)
-        self.status_box.setMinimumHeight(90)
-        self.status_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        status_layout.addWidget(QLabel("Log File"))
-        status_layout.addWidget(self.log_path_label)
-        status_layout.addWidget(QLabel("Status"))
-        status_layout.addWidget(self.status_box)
+        tables_splitter.addWidget(items_group)
+        tables_splitter.addWidget(captured_group)
+        tables_splitter.setStretchFactor(0, 2)
+        tables_splitter.setStretchFactor(1, 3)
+        tables_splitter.setSizes([360, 560])
 
-        main_splitter.addWidget(setup_group)
-        main_splitter.addWidget(scale_widget)
-        main_splitter.addWidget(captured_group)
-        main_splitter.addWidget(status_group)
-        main_splitter.setStretchFactor(0, 3)
-        main_splitter.setStretchFactor(1, 2)
-        main_splitter.setStretchFactor(2, 3)
-        main_splitter.setStretchFactor(3, 2)
-        main_splitter.setSizes([250, 180, 180, 150])
-        root_layout.addWidget(main_splitter)
+        root_layout.addWidget(setup_group)
+        root_layout.addWidget(scale_widget)
+        root_layout.addWidget(tables_splitter, 1)
 
         self.setCentralWidget(root)
+        self.setup_log_status_window()
 
         self.add_item_button.clicked.connect(self.add_item)
         self.edit_item_button.clicked.connect(self.edit_selected_item)
@@ -391,6 +416,61 @@ class MainWindow(QMainWindow):
         self.edit_weight_button.clicked.connect(self.edit_selected_weight)
         self.stop_button.clicked.connect(self.stop_logging)
         self.open_logs_button.clicked.connect(self.open_logs_folder)
+
+    def setup_log_status_window(self):
+        self.log_status_window = LogStatusDialog(self)
+        self.log_status_window.setWindowTitle("Console")
+        self.log_status_window.resize(720, 360)
+        self.log_status_window.visibility_changed.connect(
+            self.on_log_status_visibility_changed
+        )
+
+        layout = QVBoxLayout(self.log_status_window)
+        self.status_box.setReadOnly(True)
+        self.status_box.setMinimumHeight(220)
+        self.status_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        layout.addWidget(QLabel("Status"))
+        layout.addWidget(self.status_box, 1)
+
+    def set_log_status_visible(self, visible):
+        if not self.log_status_window:
+            return
+
+        if visible:
+            self.log_status_window.show()
+            self.log_status_window.raise_()
+            self.log_status_window.activateWindow()
+        else:
+            self.log_status_window.hide()
+
+        if self.log_status_action:
+            self.log_status_action.setChecked(visible)
+
+    def on_log_status_visibility_changed(self, visible):
+        if self.log_status_action:
+            self.log_status_action.setChecked(visible)
+
+    def configure_splitter(self, splitter):
+        splitter.setChildrenCollapsible(True)
+        splitter.setHandleWidth(12)
+        splitter.setOpaqueResize(True)
+        splitter.setStyleSheet(
+            """
+            QSplitter::handle:vertical {
+                background: #686868;
+                border-top: 1px solid #8a8a8a;
+                border-bottom: 1px solid #3a3a3a;
+                margin: 3px 0;
+            }
+            QSplitter::handle:horizontal {
+                background: #686868;
+                border-left: 1px solid #8a8a8a;
+                border-right: 1px solid #3a3a3a;
+                margin: 0 3px;
+            }
+            """
+        )
 
     def setup_menu(self):
         file_menu = self.menuBar().addMenu("File")
@@ -409,6 +489,13 @@ class MainWindow(QMainWindow):
         close_action = QAction("Close", self)
         close_action.triggered.connect(self.close)
         file_menu.addAction(close_action)
+
+        view_menu = self.menuBar().addMenu("View")
+        self.log_status_action = QAction("Console", self)
+        self.log_status_action.setCheckable(True)
+        self.log_status_action.setChecked(False)
+        self.log_status_action.triggered.connect(self.set_log_status_visible)
+        view_menu.addAction(self.log_status_action)
 
         settings_menu = self.menuBar().addMenu("Settings")
         serial_settings_action = QAction("Serial Settings", self)
@@ -1297,6 +1384,8 @@ class MainWindow(QMainWindow):
         self.status_box.append(str(message))
 
     def closeEvent(self, event):
+        if self.log_status_window:
+            self.log_status_window.hide()
         self.stop_logging()
         event.accept()
 
