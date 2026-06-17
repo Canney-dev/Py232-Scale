@@ -1,6 +1,16 @@
 # Update Log
 
-This log covers project changes from the past two weeks, June 1-15, 2026.
+This log covers project changes from the past two weeks, June 1-17, 2026.
+
+## June 17, 2026
+
+- Built the single-file Windows executable as `PY 232 Scale v0.08.exe`.
+- Smoke tested the v0.08 executable to confirm the app launches and closes cleanly.
+- Created and pushed the `v0.08` Git tag.
+- Published the GitHub release `PY 232 Scale v0.08`.
+- Uploaded the release asset `PY.232.Scale.v0.08.exe`.
+- Recorded the v0.08 release asset SHA256 checksum:
+  `F8B9722B1CFE46CB5C8A900E7BC9BC686CE2F9E5DF3C0A6B5777572816399047`.
 
 ## June 15, 2026
 
