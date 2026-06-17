@@ -34,6 +34,7 @@ DEFAULT_PORT = "COM3"
 DEFAULT_BAUDRATE = 9600
 FORM_START_ROW = 6
 FORM_END_ROW = 34
+MIN_FORM_ITEM_ROWS = 1
 WEIGHTS_PER_ITEM = 3
 LOW_SUMMARY_CELL = "E37"
 HIGH_SUMMARY_CELL = "E38"
@@ -130,11 +131,52 @@ def get_next_log_filename():
     return LOG_FOLDER / f"Weight_QC_Form {next_number}.xlsx"
 
 
-def apply_qc_form_layout(sheet):
+def item_count_for_layout(items):
+    return max(MIN_FORM_ITEM_ROWS, len(items or []))
+
+
+def form_layout_rows(item_count):
+    form_end_row = FORM_START_ROW + max(MIN_FORM_ITEM_ROWS, item_count) - 1
+    low_row = form_end_row + 3
+    return {
+        "form_end_row": form_end_row,
+        "low_row": low_row,
+        "high_row": low_row + 1,
+        "signoff_row": low_row + 3,
+        "low_cell": f"E{low_row}",
+        "high_cell": f"E{low_row + 1}",
+    }
+
+
+def find_form_layout(sheet):
+    for row in range(1, sheet.max_row + 1):
+        value = sheet.cell(row=row, column=3).value
+        if title_text(value or "") == "Acceptable Tolerance":
+            return {
+                "form_end_row": max(FORM_START_ROW, row - 3),
+                "low_row": row,
+                "high_row": row + 1,
+                "signoff_row": row + 3,
+                "low_cell": f"E{row}",
+                "high_cell": f"E{row + 1}",
+            }
+
+    return {
+        "form_end_row": FORM_END_ROW,
+        "low_row": 37,
+        "high_row": 38,
+        "signoff_row": 40,
+        "low_cell": LOW_SUMMARY_CELL,
+        "high_cell": HIGH_SUMMARY_CELL,
+    }
+
+
+def apply_qc_form_layout(sheet, item_count=MIN_FORM_ITEM_ROWS):
     thin = Side(style="thin", color="000000")
     medium = Side(style="medium", color="000000")
     table_border = Border(left=thin, right=thin, top=thin, bottom=thin)
     header_fill = PatternFill("solid", fgColor="E7E7E7")
+    layout = form_layout_rows(item_count)
 
     sheet.title = "QC Form"
     sheet.page_setup.orientation = "portrait"
@@ -142,7 +184,7 @@ def apply_qc_form_layout(sheet):
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 1
     sheet.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
-    sheet.print_area = "A1:E40"
+    sheet.print_area = f"A1:E{layout['signoff_row']}"
     sheet.page_margins.left = 0.25
     sheet.page_margins.right = 0.25
     sheet.page_margins.top = 0.30
@@ -161,14 +203,14 @@ def apply_qc_form_layout(sheet):
     for column, width in widths.items():
         sheet.column_dimensions[column].width = width
 
-    for row in range(1, 41):
+    for row in range(1, layout["signoff_row"] + 1):
         sheet.row_dimensions[row].height = 15
 
-    for row in range(FORM_START_ROW, FORM_END_ROW + 1):
+    for row in range(FORM_START_ROW, layout["form_end_row"] + 1):
         sheet.row_dimensions[row].height = 18
 
     sheet.row_dimensions[4].height = 21
-    sheet.row_dimensions[40].height = 20
+    sheet.row_dimensions[layout["signoff_row"]].height = 20
 
     sheet["A2"] = "Project #"
     sheet["A2"].font = Font(bold=True)
@@ -188,28 +230,38 @@ def apply_qc_form_layout(sheet):
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = table_border
 
-    for row in range(FORM_START_ROW, FORM_END_ROW + 1):
+    for row in range(FORM_START_ROW, layout["form_end_row"] + 1):
         for column in range(1, 6):
             cell = sheet.cell(row=row, column=column)
             cell.border = table_border
             cell.alignment = Alignment(vertical="center", wrap_text=True)
 
-    sheet.merge_cells("C37:D37")
-    sheet["C37"] = "Acceptable Tolerance"
-    sheet["C37"].font = Font(bold=True)
-    sheet["C37"].alignment = Alignment(horizontal="center")
+    low_row = layout["low_row"]
+    high_row = layout["high_row"]
+    signoff_row = layout["signoff_row"]
+    sheet.merge_cells(f"C{low_row}:D{low_row}")
+    tolerance_cell = sheet.cell(row=low_row, column=3)
+    assert isinstance(tolerance_cell, Cell)
+    tolerance_cell.value = "Acceptable Tolerance"
+    tolerance_cell.font = Font(bold=True)
+    tolerance_cell.alignment = Alignment(horizontal="center")
 
-    for cell_name, label in ((LOW_SUMMARY_CELL, "Low"), (HIGH_SUMMARY_CELL, "High")):
+    for cell_name, label in ((layout["low_cell"], "Low"), (layout["high_cell"], "High")):
         cell = sheet[cell_name]
+        assert isinstance(cell, Cell)
         cell.value = label
         cell.font = Font(bold=True)
         cell.alignment = Alignment(vertical="top", wrap_text=True)
         cell.border = Border(bottom=medium)
 
-    sheet["B40"] = "Line Lead Sign Off"
-    sheet["B40"].font = Font(bold=True)
-    sheet["C40"].border = Border(bottom=medium)
-    sheet.merge_cells("C40:E40")
+    signoff_label_cell = sheet.cell(row=signoff_row, column=2)
+    assert isinstance(signoff_label_cell, Cell)
+    signoff_label_cell.value = "Line Lead Sign Off"
+    signoff_label_cell.font = Font(bold=True)
+    signoff_line_cell = sheet.cell(row=signoff_row, column=3)
+    assert isinstance(signoff_line_cell, Cell)
+    signoff_line_cell.border = Border(bottom=medium)
+    sheet.merge_cells(f"C{signoff_row}:E{signoff_row}")
 
 
 def adjust_form_row_height(sheet, row):
@@ -231,26 +283,43 @@ def adjust_form_row_height(sheet, row):
     sheet.row_dimensions[row].height = max(18, min(72, max_lines * 15))
 
 
-def update_summary(sheet, cell_name, label, entries):
+def format_total_lines(totals):
+    if not totals:
+        return []
+
+    if len(totals) == 1:
+        unit, total = next(iter(totals.items()))
+        suffix = f" {unit}" if unit else ""
+        return [f"Total: {total:.3f}{suffix}"]
+
+    lines = []
+    for unit, total in sorted(totals.items()):
+        unit_label = unit or "Weight"
+        lines.append(f"Total {unit_label}: {total:.3f}")
+    return lines
+
+
+def update_summary(sheet, cell_name, label, entries, totals=None):
     summary_cell = sheet[cell_name]
     assert isinstance(summary_cell, Cell)
 
-    if entries:
-        summary_cell.value = f"{label}\n" + "\n".join(entries)
-    else:
-        summary_cell.value = label
+    lines = [label]
+    lines.extend(format_total_lines(totals or {}))
+    lines.extend(entries)
+    summary_cell.value = "\n".join(lines)
 
     summary_cell.alignment = Alignment(vertical="top", wrap_text=True)
     row = summary_cell.row
-    sheet.row_dimensions[row].height = max(20, min(90, (len(entries) + 1) * 15))
+    sheet.row_dimensions[row].height = max(20, min(90, len(lines) * 15))
 
 
 def create_qc_workbook(project_number="", items=None):
     workbook = Workbook()
     form_sheet = workbook.active
     assert isinstance(form_sheet, Worksheet)
+    item_count = item_count_for_layout(items)
 
-    apply_qc_form_layout(form_sheet)
+    apply_qc_form_layout(form_sheet, item_count)
     form_sheet["B2"] = title_text(project_number)
 
     if items:
@@ -318,8 +387,14 @@ class QcWorkbookSession:
         self.workbook = create_qc_workbook(self.project_number, self.items)
         self.form_sheet = self.workbook["QC Form"]
         self.raw_sheet = self.workbook["Raw Data"]
+        layout = form_layout_rows(item_count_for_layout(self.items))
+        self.form_end_row = layout["form_end_row"]
+        self.low_summary_cell = layout["low_cell"]
+        self.high_summary_cell = layout["high_cell"]
         self.low_entries = []
         self.high_entries = []
+        self.low_totals = {}
+        self.high_totals = {}
         self.item_results = {}
         self.save()
 
@@ -341,13 +416,19 @@ class QcWorkbookSession:
             if "Raw Data" in session.workbook.sheetnames
             else session.workbook["RAW DATA"]
         )
+        layout = find_form_layout(session.form_sheet)
+        session.form_end_row = layout["form_end_row"]
+        session.low_summary_cell = layout["low_cell"]
+        session.high_summary_cell = layout["high_cell"]
         session.project_number = title_text(session.form_sheet["B2"].value or "")
         session.items = []
         session.low_entries = []
         session.high_entries = []
+        session.low_totals = {}
+        session.high_totals = {}
         session.item_results = {}
 
-        for row in range(FORM_START_ROW, FORM_END_ROW + 1):
+        for row in range(FORM_START_ROW, session.form_end_row + 1):
             name = session.form_sheet.cell(row=row, column=1).value
             description = session.form_sheet.cell(row=row, column=2).value
             if name is None and description is None:
@@ -503,6 +584,8 @@ class QcWorkbookSession:
     def rebuild_summaries(self):
         low_entries = []
         high_entries = []
+        low_totals = {}
+        high_totals = {}
 
         for item_index in sorted(self.item_results):
             item = self.items[item_index]
@@ -516,13 +599,31 @@ class QcWorkbookSession:
                 entry = f"{item.name} W{weight_number}: {self.format_weight(reading)}"
                 if status == "Low":
                     low_entries.append(entry)
+                    unit = caps(reading.get("unit", ""))
+                    low_totals[unit] = low_totals.get(unit, 0) + reading["weight"]
                 elif status == "High":
                     high_entries.append(entry)
+                    unit = caps(reading.get("unit", ""))
+                    high_totals[unit] = high_totals.get(unit, 0) + reading["weight"]
 
         self.low_entries = low_entries
         self.high_entries = high_entries
-        update_summary(self.form_sheet, LOW_SUMMARY_CELL, "Low", self.low_entries)
-        update_summary(self.form_sheet, HIGH_SUMMARY_CELL, "High", self.high_entries)
+        self.low_totals = low_totals
+        self.high_totals = high_totals
+        update_summary(
+            self.form_sheet,
+            self.low_summary_cell,
+            "Low",
+            self.low_entries,
+            self.low_totals,
+        )
+        update_summary(
+            self.form_sheet,
+            self.high_summary_cell,
+            "High",
+            self.high_entries,
+            self.high_totals,
+        )
 
     @staticmethod
     def format_weight(reading):

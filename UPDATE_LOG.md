@@ -4,6 +4,19 @@ This log covers project changes from the past two weeks, June 1-17, 2026.
 
 ## June 17, 2026
 
+- Added total recorded `Low` weight to the bottom `Low` tolerance field.
+- Added total recorded `High` weight to the bottom `High` tolerance field.
+- Kept low and high totals separated by unit so unlike units are not combined.
+- Made the printable QC form item table automatically adjust to the number of items entered.
+- Moved the bottom tolerance and sign-off fields based on the dynamic item count.
+- Kept older saved logs readable by detecting where the tolerance fields are located.
+- Built the single-file Windows executable as `PY 232 Scale v0.1.exe`.
+- Smoke tested the v0.1 executable to confirm the app launches.
+- Created and pushed the `v0.1` Git tag.
+- Published the GitHub release `PY 232 Scale v0.1`.
+- Uploaded the release asset `PY.232.Scale.v0.1.exe`.
+- Recorded the v0.1 release asset SHA256 checksum:
+  `2F6A96FEF0E8D59CE3F57A230862CBAC550AB8F9FBEEEDBFF854FFF695F3D4A6`.
 - Built the single-file Windows executable as `PY 232 Scale v0.08.exe`.
 - Smoke tested the v0.08 executable to confirm the app launches and closes cleanly.
 - Created and pushed the `v0.08` Git tag.

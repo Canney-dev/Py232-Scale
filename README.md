@@ -12,8 +12,11 @@ and saves the results as `.xlsx` log files.
 For normal use, run the packaged single-file executable:
 
 ```text
-dist\PY 232 Scale.exe
+dist\PY 232 Scale v0.1.exe
 ```
+
+The latest published Windows build is available from
+[PY 232 Scale releases](https://github.com/gipson-dev/Py232-Scale/releases).
 
 If you are using a zipped package, extract the zip first. Running the folder
 package directly from Windows zip preview can cause a `Failed to load Python
@@ -26,6 +29,10 @@ files.
 - Capture three weights for each item.
 - Automatically mark the lowest weight as `Low` and the highest weight as
   `High`.
+- Sort each completed item's weights from lowest to highest in the Excel form.
+- Automatically size the printable item table to the number of items entered.
+- Add total recorded `Low` weight and total recorded `High` weight to the
+  bottom tolerance fields.
 - Save Excel logs in the `Logs` folder.
 - Open previously saved logs for editing.
 - Continue weighing an item from an existing log.
@@ -99,6 +106,8 @@ python -m pip install -r requirements.txt
 When all three weights for an item are captured, the app updates the Excel form
 and raw data sheet. The lowest reading is marked `Low`, the highest reading is
 marked `High`, and the bottom summary fields collect all low and high readings.
+The bottom `Low` field also shows the total of all low-marked weights, and the
+bottom `High` field shows the total of all high-marked weights.
 
 ## Serial Settings
 
@@ -198,7 +207,7 @@ After opening a log, you can:
 - Use `File > Save Log` to save the current workbook.
 
 Corrected weights automatically rebuild the low and high markings and the
-bottom low/high summaries.
+bottom low/high summaries, including the low and high totals.
 
 ## Printing Logs
 
@@ -232,6 +241,9 @@ Each workbook includes:
 
 - `QC Form`: the printable checklist form.
 - `Raw Data`: timestamped captured readings and raw scale lines.
+
+The `QC Form` item table automatically adjusts to the number of items entered,
+so short jobs do not print with a large block of unused rows.
 
 When running the packaged `.exe`, the `Logs` folder is created beside the
 executable. When running from source, the `Logs` folder is created in the
@@ -274,7 +286,7 @@ dist\PY 232 Scale.exe
 Recommended distribution file:
 
 ```text
-dist\PY_232_Scale_OneFile_Windows.zip
+dist\PY 232 Scale v0.1.exe
 ```
 
 If you distribute the folder package instead, the whole `PY 232 Scale` folder
@@ -288,7 +300,7 @@ This usually means the folder package was run from inside Windows zip preview.
 Click `Extract all` first, or use the single-file executable:
 
 ```text
-dist\PY 232 Scale.exe
+dist\PY 232 Scale v0.1.exe
 ```
 
 ### Access Is Denied On COM Port
