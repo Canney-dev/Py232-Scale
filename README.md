@@ -17,6 +17,7 @@ dist\Py232 Scale v0.3.exe
 
 The latest published Windows build is available from
 [PY 232 Scale releases](https://github.com/gipson-dev/Py232-Scale/releases).
+For v0.3, download the release asset named `Py232.Scale.v0.3.exe`.
 
 If you are using a zipped package, extract the zip first. Running the folder
 package directly from Windows zip preview can cause a `Failed to load Python
@@ -302,6 +303,12 @@ Recommended distribution file:
 
 ```text
 dist\Py232 Scale v0.3.exe
+```
+
+GitHub release asset:
+
+```text
+Py232.Scale.v0.3.exe
 ```
 
 If you distribute the folder package instead, the whole `PY 232 Scale` folder

@@ -15,6 +15,9 @@ This log covers project changes from the past two weeks, June 1-17, 2026.
 - Updated the README instructions for the v0.3 layout and release executable.
 - Built the single-file Windows executable as `Py232 Scale v0.3.exe`.
 - Smoke tested the v0.3 executable to confirm the app launches and closes cleanly.
+- Created and pushed the `v0.3` Git tag.
+- Published the GitHub release `Py232 Scale v0.3`.
+- Uploaded the release asset `Py232.Scale.v0.3.exe`.
 - Recorded the v0.3 release asset SHA256 checksum:
   `4097224560B2722EC98B1460C13ADF88620CCCA7F37A515AFF8B6523900340F9`.
 - Added resizable GUI sections with draggable splitters.
