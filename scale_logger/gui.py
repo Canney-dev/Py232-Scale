@@ -1,14 +1,26 @@
 import sys
 import re
-import ctypes
 import time
 
 import serial
 from serial.tools import list_ports
 
 from PySide6.QtCore import QSettings, QThread, Qt, QUrl, Signal
-from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QPalette
-from PySide6.QtPrintSupport import QPrinterInfo
+from PySide6.QtGui import (
+    QAction,
+    QActionGroup,
+    QColor,
+    QDesktopServices,
+    QFont,
+    QFontMetrics,
+    QGuiApplication,
+    QPageLayout,
+    QPageSize,
+    QPainter,
+    QPalette,
+    QPen,
+)
+from PySide6.QtPrintSupport import QPrinter, QPrinterInfo
 from PySide6.QtWidgets import (
     QApplication,
     QAbstractItemView,
@@ -42,6 +54,7 @@ from PySide6.QtWidgets import (
 from .core import (
     DEFAULT_BAUDRATE,
     DEFAULT_PORT,
+    FORM_START_ROW,
     LOG_FOLDER,
     PROJECT_DIR,
     WEIGHTS_PER_ITEM,
@@ -61,6 +74,208 @@ THEME_OPTIONS = {
     "light": "Light",
     "dark": "Dark",
 }
+
+
+def print_qc_form_native(session, printer_name):
+    printer = QPrinter(QPrinter.HighResolution)
+    printer.setPrinterName(printer_name)
+    printer.setDocName("PY 232 Scale Weight QC Form")
+    printer.setPageSize(QPageSize(QPageSize.Letter))
+    printer.setPageOrientation(QPageLayout.Portrait)
+    printer.setFullPage(False)
+
+    if not printer.isValid():
+        raise RuntimeError(f"Printer is not available: {printer_name}")
+
+    painter = QPainter()
+    if not painter.begin(printer):
+        raise RuntimeError(f"Could not start print job for: {printer_name}")
+
+    try:
+        draw_qc_form_page(painter, session)
+    finally:
+        painter.end()
+
+
+def draw_qc_form_page(painter, session):
+    page = painter.viewport()
+    painter.setWindow(0, 0, 612, 792)
+    painter.setViewport(page)
+    painter.fillRect(0, 0, 612, 792, Qt.white)
+    x = 36
+    y = 36
+    width = 540
+    sheet = session.form_sheet
+    row_count = max(1, len(session.items))
+
+    title_font = print_font(15, True)
+    header_font = print_font(8, True)
+    body_size = 9 if row_count <= 12 else 8 if row_count <= 24 else 7
+    body_font = print_font(body_size)
+    bold_font = print_font(body_size, True)
+    small_font = print_font(max(7, body_size - 1))
+
+    painter.setPen(QPen(Qt.black, 0.8))
+    project_h = 28
+    painter.setFont(bold_font)
+    painter.drawText(x, y, 70, project_h, Qt.AlignVCenter, "Project #")
+    line_x = x + 76
+    line_y = y + project_h - 6
+    painter.drawLine(line_x, line_y, x + width, line_y)
+    painter.setFont(body_font)
+    painter.drawText(line_x + 4, y, width - 80, project_h, Qt.AlignVCenter, str(session.project_number or ""))
+    y += project_h + 14
+
+    title_h = 28
+    painter.setFont(title_font)
+    painter.drawText(x, y, width, title_h, Qt.AlignCenter, "Weight QC Checklist Form")
+    y += title_h + 10
+
+    table_available_height = 470
+    header_h = 22
+    row_heights = qc_row_heights(
+        painter,
+        sheet,
+        row_count,
+        body_font,
+        width,
+        table_available_height - header_h,
+    )
+    table_bottom = y + header_h + sum(row_heights)
+
+    columns = qc_table_columns(x, width)
+    draw_table_row(painter, columns, y, header_h, ["Item", "Description", "Weight 1", "Weight 2", "Weight 3"], header_font, True)
+    y += header_h
+
+    for index in range(row_count):
+        sheet_row = FORM_START_ROW + index
+        values = [
+            cell_text(sheet, sheet_row, 1),
+            cell_text(sheet, sheet_row, 2),
+            cell_text(sheet, sheet_row, 3),
+            cell_text(sheet, sheet_row, 4),
+            cell_text(sheet, sheet_row, 5),
+        ]
+        draw_table_row(painter, columns, y, row_heights[index], values, body_font, False)
+        y += row_heights[index]
+
+    y = max(table_bottom + 24, 560)
+    draw_tolerance_section(painter, session, x, y, width, body_font, bold_font, small_font)
+
+
+def qc_table_columns(x, width):
+    proportions = [0.22, 0.42, 0.12, 0.12, 0.12]
+    columns = []
+    current_x = x
+    for index, proportion in enumerate(proportions):
+        col_width = int(width * proportion) if index < len(proportions) - 1 else x + width - current_x
+        columns.append((current_x, col_width))
+        current_x += col_width
+    return columns
+
+
+def qc_row_heights(painter, sheet, row_count, font, width, available_height):
+    columns = qc_table_columns(0, width)
+    minimum = 20 if row_count > 24 else 24
+    maximum = 46 if row_count <= 10 else 34
+    heights = []
+
+    for index in range(row_count):
+        sheet_row = FORM_START_ROW + index
+        values = [
+            cell_text(sheet, sheet_row, 1),
+            cell_text(sheet, sheet_row, 2),
+            cell_text(sheet, sheet_row, 3),
+            cell_text(sheet, sheet_row, 4),
+            cell_text(sheet, sheet_row, 5),
+        ]
+        desired = minimum
+        for value, (_col_x, col_width) in zip(values, columns):
+            desired = max(desired, wrapped_text_height(painter, font, value, col_width - 8) + 10)
+        heights.append(min(maximum, desired))
+
+    total = sum(heights)
+    if total <= available_height:
+        return heights
+
+    scale = available_height / total
+    return [max(14, int(height * scale)) for height in heights]
+
+
+def draw_table_row(painter, columns, y, height, values, font, header):
+    painter.save()
+    painter.setFont(font)
+    if header:
+        painter.fillRect(columns[0][0], y, sum(width for _x, width in columns), height, QColor("#E7E7E7"))
+
+    for index, ((x, width), value) in enumerate(zip(columns, values)):
+        painter.drawRect(x, y, width, height)
+        flags = Qt.AlignCenter | Qt.TextWordWrap
+        if not header and index in (0, 1):
+            flags = Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
+        painter.drawText(x + 4, y + 3, width - 8, height - 6, flags, str(value or ""))
+    painter.restore()
+
+
+def draw_tolerance_section(painter, session, x, y, width, body_font, bold_font, small_font):
+    sheet = session.form_sheet
+    low_text = str(sheet[session.low_summary_cell].value or "Low")
+    high_text = str(sheet[session.high_summary_cell].value or "High")
+    label_w = 170
+    summary_x = x + 355
+    summary_w = width - 355
+    summary_h = 64
+
+    painter.setFont(bold_font)
+    painter.drawText(x + 230, y, label_w, summary_h, Qt.AlignCenter, "Acceptable Tolerance")
+    draw_summary_line(painter, summary_x, y, summary_w, summary_h, low_text, bold_font, small_font)
+    y += summary_h
+    draw_summary_line(painter, summary_x, y, summary_w, summary_h, high_text, bold_font, small_font)
+    y += summary_h + 26
+
+    signoff_label_w = 150
+    signoff_line_w = 290
+    painter.setFont(bold_font)
+    painter.drawText(x + 110, y, signoff_label_w, 24, Qt.AlignVCenter, "Line Lead Sign Off")
+    line_y = y + 20
+    painter.drawLine(x + 265, line_y, x + 265 + signoff_line_w, line_y)
+
+
+def draw_summary_line(painter, x, y, width, height, text, label_font, detail_font):
+    lines = str(text or "").splitlines() or [""]
+    label = lines[0]
+    details = "\n".join(lines[1:])
+    label_w = int(width * 0.20)
+    painter.setFont(label_font)
+    painter.drawText(x, y, label_w, height, Qt.AlignLeft | Qt.AlignTop, label)
+    painter.drawLine(x, y + height - 2, x + width, y + height - 2)
+    if details:
+        painter.setFont(detail_font)
+        painter.drawText(x + label_w + 4, y, width - label_w - 4, height - 4, Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, details)
+
+
+def text_height(painter, font, text):
+    metrics = QFontMetrics(font)
+    return metrics.boundingRect(str(text or " ")).height()
+
+
+def wrapped_text_height(painter, font, text, width):
+    metrics = QFontMetrics(font)
+    rect = metrics.boundingRect(0, 0, max(1, int(width)), 10000, Qt.TextWordWrap, str(text or " "))
+    return rect.height()
+
+
+def cell_text(sheet, row, column):
+    value = sheet.cell(row=row, column=column).value
+    return "" if value is None else str(value)
+
+
+def print_font(pixel_size, bold=False):
+    font = QFont(QGuiApplication.font())
+    font.setPixelSize(pixel_size)
+    if bold:
+        font.setWeight(QFont.Bold)
+    return font
 
 
 def default_style_name():
@@ -949,26 +1164,15 @@ class MainWindow(QMainWindow):
 
         try:
             self.session.save()
-            result = ctypes.windll.shell32.ShellExecuteW(
-                None,
-                "printto",
-                str(self.session.filename),
-                f'"{selected_printer}"',
-                None,
-                0,
-            )
+            print_qc_form_native(self.session, selected_printer)
         except Exception as exc:
-            QMessageBox.critical(self, "Print Log", str(exc))
-            return
-
-        if result <= 32:
             QMessageBox.critical(
                 self,
                 "Print Log",
                 (
-                    "Windows Could Not Send This Workbook To The Printer. "
-                    "Make Sure .xlsx Files Open With Excel Or Another App "
-                    "That Supports Printing."
+                    "PY 232 Scale Could Not Print This Form.\n\n"
+                    f"{exc}\n\n"
+                    "Make Sure The Selected Printer Is Available."
                 ),
             )
             return

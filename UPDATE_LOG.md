@@ -4,6 +4,17 @@ This log covers project changes from the past two weeks, June 1-17, 2026.
 
 ## June 17, 2026
 
+- Replaced Windows file-association printing with native Qt printing.
+- `File > Print Log` now prints the `QC Form` worksheet directly through the selected Windows printer.
+- Removed the need for Microsoft Excel or another spreadsheet app when printing logs.
+- Improved native print spacing and text alignment for the QC form table, Low/High totals, and sign-off area.
+- Built the single-file Windows executable as `Py232 Scale v0.3.2.exe`.
+- Smoke tested the v0.3.2 executable to confirm the app launches and closes cleanly.
+- Created and pushed the `v0.3.2` Git tag.
+- Published the GitHub release `Py232 Scale v0.3.2`.
+- Uploaded the release asset `Py232.Scale.v0.3.2.exe`.
+- Recorded the v0.3.2 release asset SHA256 checksum:
+  `E469497932095697464ED50A53111161336A7B06B558F7528A70AE8F95EE3777`.
 - Moved the live scale section above the item list and captured weights.
 - Kept the live scale section at a fixed vertical size so the reading text stays visible.
 - Placed the item list and captured weights side by side with a draggable center splitter.

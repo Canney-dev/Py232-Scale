@@ -12,12 +12,12 @@ and saves the results as `.xlsx` log files.
 For normal use, run the packaged single-file executable:
 
 ```text
-dist\Py232 Scale v0.3.exe
+dist\Py232 Scale v0.3.2.exe
 ```
 
 The latest published Windows build is available from
 [PY 232 Scale releases](https://github.com/gipson-dev/Py232-Scale/releases).
-For v0.3, download the release asset named `Py232.Scale.v0.3.exe`.
+For v0.3.2, download the release asset named `Py232.Scale.v0.3.2.exe`.
 
 If you are using a zipped package, extract the zip first. Running the folder
 package directly from Windows zip preview can cause a `Failed to load Python
@@ -234,8 +234,8 @@ File > Print Log
 ```
 
 The app saves the current workbook, shows available Windows printers, and sends
-the `.xlsx` file to the selected printer. Windows must have an application
-associated with `.xlsx` files that supports printing, such as Microsoft Excel.
+the printable `QC Form` worksheet directly to the selected printer. Microsoft
+Excel or another spreadsheet app is not required for printing.
 
 ## Output Files
 
@@ -302,13 +302,13 @@ dist\PY 232 Scale.exe
 Recommended distribution file:
 
 ```text
-dist\Py232 Scale v0.3.exe
+dist\Py232 Scale v0.3.2.exe
 ```
 
 GitHub release asset:
 
 ```text
-Py232.Scale.v0.3.exe
+Py232.Scale.v0.3.2.exe
 ```
 
 If you distribute the folder package instead, the whole `PY 232 Scale` folder
@@ -322,7 +322,7 @@ This usually means the folder package was run from inside Windows zip preview.
 Click `Extract all` first, or use the single-file executable:
 
 ```text
-dist\Py232 Scale v0.3.exe
+dist\Py232 Scale v0.3.2.exe
 ```
 
 ### Access Is Denied On COM Port
@@ -347,8 +347,7 @@ an existing log is opened for continuing.
 
 ### Print Log Fails
 
-Make sure `.xlsx` files open with Excel or another spreadsheet program that can
-print from Windows.
+Make sure the selected printer is installed, online, and available in Windows.
 
 ## Project Files
 
