@@ -12,7 +12,7 @@ and saves the results as `.xlsx` log files.
 For normal use, run the packaged single-file executable:
 
 ```text
-dist\PY 232 Scale v0.1.exe
+dist\PY 232 Scale v0.2.exe
 ```
 
 The latest published Windows build is available from
@@ -33,6 +33,8 @@ files.
 - Automatically size the printable item table to the number of items entered.
 - Add total recorded `Low` weight and total recorded `High` weight to the
   bottom tolerance fields.
+- Resize the item list, captured weights, live scale, and status areas with
+  draggable splitters.
 - Save Excel logs in the `Logs` folder.
 - Open previously saved logs for editing.
 - Continue weighing an item from an existing log.
@@ -108,6 +110,9 @@ and raw data sheet. The lowest reading is marked `Low`, the highest reading is
 marked `High`, and the bottom summary fields collect all low and high readings.
 The bottom `Low` field also shows the total of all low-marked weights, and the
 bottom `High` field shows the total of all high-marked weights.
+
+The item list and captured weights sections can be resized by dragging the
+horizontal splitters between the main screen sections.
 
 ## Serial Settings
 
@@ -286,7 +291,7 @@ dist\PY 232 Scale.exe
 Recommended distribution file:
 
 ```text
-dist\PY 232 Scale v0.1.exe
+dist\PY 232 Scale v0.2.exe
 ```
 
 If you distribute the folder package instead, the whole `PY 232 Scale` folder
@@ -300,7 +305,7 @@ This usually means the folder package was run from inside Windows zip preview.
 Click `Extract all` first, or use the single-file executable:
 
 ```text
-dist\PY 232 Scale v0.1.exe
+dist\PY 232 Scale v0.2.exe
 ```
 
 ### Access Is Denied On COM Port

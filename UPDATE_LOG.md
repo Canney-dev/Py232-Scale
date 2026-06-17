@@ -4,6 +4,16 @@ This log covers project changes from the past two weeks, June 1-17, 2026.
 
 ## June 17, 2026
 
+- Added resizable GUI sections with draggable splitters.
+- Made the item list and description table resizable.
+- Made the captured/recorded weights table resizable.
+- Built the single-file Windows executable as `PY 232 Scale v0.2.exe`.
+- Smoke tested the v0.2 executable to confirm the app launches.
+- Created and pushed the `v0.2` Git tag.
+- Published the GitHub release `PY 232 Scale v0.2`.
+- Uploaded the release asset `PY.232.Scale.v0.2.exe`.
+- Recorded the v0.2 release asset SHA256 checksum:
+  `225A73EC378DE27B766147CA58345E65035FFA3DF96BF657C4AF6760C8BEFD52`.
 - Added total recorded `Low` weight to the bottom `Low` tolerance field.
 - Added total recorded `High` weight to the bottom `High` tolerance field.
 - Kept low and high totals separated by unit so unlike units are not combined.

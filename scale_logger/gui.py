@@ -27,6 +27,8 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
+    QSplitter,
     QSpinBox,
     QStyleFactory,
     QTableWidget,
@@ -275,6 +277,8 @@ class MainWindow(QMainWindow):
 
         root = QWidget()
         root_layout = QVBoxLayout(root)
+        main_splitter = QSplitter(Qt.Vertical)
+        main_splitter.setChildrenCollapsible(False)
 
         setup_group = QGroupBox("Setup")
         setup_layout = QGridLayout(setup_group)
@@ -300,10 +304,15 @@ class MainWindow(QMainWindow):
             | QAbstractItemView.EditKeyPressed
             | QAbstractItemView.AnyKeyPressed
         )
+        self.items_table.setMinimumHeight(90)
+        self.items_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         setup_layout.addLayout(item_form, 1, 0, 1, 6)
         setup_layout.addLayout(item_buttons, 2, 0, 1, 6)
         setup_layout.addWidget(self.items_table, 3, 0, 1, 6)
+        setup_layout.setRowStretch(3, 1)
+        setup_layout.setColumnStretch(1, 1)
+        setup_layout.setColumnStretch(4, 1)
 
         live_group = QGroupBox("Live Scale")
         live_layout = QVBoxLayout(live_group)
@@ -325,7 +334,14 @@ class MainWindow(QMainWindow):
         action_layout.addWidget(self.edit_weight_button)
         action_layout.addWidget(self.stop_button)
         action_layout.addWidget(self.open_logs_button)
+        scale_widget = QWidget()
+        scale_layout = QVBoxLayout(scale_widget)
+        scale_layout.setContentsMargins(0, 0, 0, 0)
+        scale_layout.addWidget(live_group)
+        scale_layout.addLayout(action_layout)
 
+        captured_group = QGroupBox("Captured Weights")
+        captured_layout = QVBoxLayout(captured_group)
         self.captured_table.setHorizontalHeaderLabels([
             "Item",
             "Weight #",
@@ -336,19 +352,30 @@ class MainWindow(QMainWindow):
         self.captured_table.horizontalHeader().setStretchLastSection(True)
         self.captured_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.captured_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.captured_table.setMinimumHeight(110)
+        self.captured_table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        captured_layout.addWidget(self.captured_table)
 
+        status_group = QGroupBox("Log And Status")
+        status_layout = QVBoxLayout(status_group)
         self.status_box.setReadOnly(True)
-        self.status_box.setMinimumHeight(130)
+        self.status_box.setMinimumHeight(90)
+        self.status_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        status_layout.addWidget(QLabel("Log File"))
+        status_layout.addWidget(self.log_path_label)
+        status_layout.addWidget(QLabel("Status"))
+        status_layout.addWidget(self.status_box)
 
-        root_layout.addWidget(setup_group)
-        root_layout.addWidget(live_group)
-        root_layout.addLayout(action_layout)
-        root_layout.addWidget(QLabel("Captured Weights"))
-        root_layout.addWidget(self.captured_table)
-        root_layout.addWidget(QLabel("Log File"))
-        root_layout.addWidget(self.log_path_label)
-        root_layout.addWidget(QLabel("Status"))
-        root_layout.addWidget(self.status_box)
+        main_splitter.addWidget(setup_group)
+        main_splitter.addWidget(scale_widget)
+        main_splitter.addWidget(captured_group)
+        main_splitter.addWidget(status_group)
+        main_splitter.setStretchFactor(0, 3)
+        main_splitter.setStretchFactor(1, 2)
+        main_splitter.setStretchFactor(2, 3)
+        main_splitter.setStretchFactor(3, 2)
+        main_splitter.setSizes([250, 180, 180, 150])
+        root_layout.addWidget(main_splitter)
 
         self.setCentralWidget(root)
 
